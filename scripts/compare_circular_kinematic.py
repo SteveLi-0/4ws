@@ -5,6 +5,10 @@
 1b: 运动学等效前轮转角 δ_eq = δf - δr = 2δf, δr = 0
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import numpy as np
 import matplotlib.pyplot as plt
 from bicycle_model import (
@@ -111,5 +115,7 @@ ax.legend(fontsize=8)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig("compare_circular_kinematic.png", dpi=150)
+output_dir = Path(__file__).resolve().parent.parent / "output"
+output_dir.mkdir(exist_ok=True)
+plt.savefig(output_dir / "compare_circular_kinematic.png", dpi=150)
 plt.show()

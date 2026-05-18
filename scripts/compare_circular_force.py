@@ -1,14 +1,18 @@
 """
-组1对比：反相转向（counter-steering）匀速定圆 — 横摆力矩等效
+组1对比：反相转向（counter-steering）匀速定圆 — 侧向力等效
 
 1a: 4WS 后轮转向 δr = -δf
-1b: 横摆力矩等效前轮转角 δ_eq = δf - (lr·Cr)/(lf·Cf)·δr, δr = 0
+1b: 侧向力等效前轮转角 δ_eq = δf + (Cr/Cf)·δr, δr = 0
 """
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import matplotlib.pyplot as plt
 from bicycle_model import (
-    VehicleParams, simulate, moment_equivalent, const_steer,
+    VehicleParams, simulate, force_equivalent, const_steer,
 )
 
 plt.rcParams["font.family"] = ["Noto Sans CJK JP", "sans-serif"]
@@ -18,20 +22,19 @@ params = VehicleParams()
 vx = 10.0
 delta_f = 0.05
 delta_r = -delta_f
-delta_eq = moment_equivalent(delta_f, delta_r, params)
+delta_eq = force_equivalent(delta_f, delta_r, params)
 t_span = (0.0, 10.0)
 
-print(f"=== 横摆力矩等效 ===")
+print(f"=== 侧向力等效 ===")
 print(f"  δf={delta_f:.4f}, δr={delta_r:.4f}")
-print(f"  lr·Cr/(lf·Cf) = {params.lr*params.Cr/(params.lf*params.Cf):.4f}")
-print(f"  δ_eq = δf - (lr·Cr)/(lf·Cf)·δr = {delta_eq:.4f} rad ({np.degrees(delta_eq):.2f}°)")
+print(f"  δ_eq = δf + (Cr/Cf)·δr = {delta_eq:.4f} rad ({np.degrees(delta_eq):.2f}°)")
 
 # 1a: 4WS counter-steering
 t_a, vy_a, r_a, psi_a, X_a, Y_a, beta_a = simulate(
     vx, const_steer(delta_f), const_steer(delta_r), params, t_span
 )
 
-# 1b: 2WS moment equivalent
+# 1b: 2WS force equivalent
 t_b, vy_b, r_b, psi_b, X_b, Y_b, beta_b = simulate(
     vx, const_steer(delta_eq), const_steer(0.0), params, t_span
 )
@@ -50,10 +53,10 @@ for label, arr_a, arr_b, unit in [
 
 # Plot
 fig, axes = plt.subplots(2, 3, figsize=(15, 9))
-fig.suptitle("组1: 反相转向定圆 — 4WS vs 横摆力矩等效 2WS (δ_eq=δf-lr·Cr/(lf·Cf)·δr)", fontsize=13)
+fig.suptitle("组1: 反相转向定圆 — 4WS vs 侧向力等效 2WS (δ_eq=δf+(Cr/Cf)δr)", fontsize=14)
 
 label_4ws = "1a: 4WS (δr=-δf)"
-label_2ws = f"1b: 2WS (δ_eq={np.degrees(delta_eq):.2f}°)"
+label_2ws = f"1b: 2WS (δ_eq={np.degrees(delta_eq):.1f}°)"
 
 ax = axes[0, 0]
 ax.plot(X_a, Y_a, label=label_4ws)
@@ -105,7 +108,7 @@ ax = axes[1, 2]
 t_input = [t_span[0], t_span[1]]
 ax.step(t_input, [np.degrees(delta_f)] * 2, label=f"1a: δf={np.degrees(delta_f):.1f}°")
 ax.step(t_input, [np.degrees(delta_r)] * 2, label=f"1a: δr={np.degrees(delta_r):.1f}°")
-ax.step(t_input, [np.degrees(delta_eq)] * 2, "--", label=f"1b: δ_eq={np.degrees(delta_eq):.2f}°")
+ax.step(t_input, [np.degrees(delta_eq)] * 2, "--", label=f"1b: δ_eq={np.degrees(delta_eq):.1f}°")
 ax.set_xlabel("时间 [s]")
 ax.set_ylabel("转角 [deg]")
 ax.set_title("转向输入")
@@ -113,5 +116,7 @@ ax.legend(fontsize=8)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig("compare_circular_moment.png", dpi=150)
+output_dir = Path(__file__).resolve().parent.parent / "output"
+output_dir.mkdir(exist_ok=True)
+plt.savefig(output_dir / "compare_circular_force.png", dpi=150)
 plt.show()
